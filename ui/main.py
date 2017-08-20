@@ -15,22 +15,27 @@ mayaChecklist.ui.main.main()
 
 
 @todo: 
-*   Rename tab functionality
+*   Change main window from window to widget
+*   Edit/Delete checklist item
+*   Save as preset
 *   Sort by check/archive checks
 *   Sort by frame
 *   Add color functionality
 *   Reorder checklist item functionality
-*   Save to/load from
-*   Create template checklists
 
 =========================================================
 Maya Tanaka
 '''
-
 import maya.cmds as mc
 import pymel.core as pm
 
+import os
 import json
+
+import mayaChecklist.presets.marker as marker
+# print('File: {}'.format(marker.__file__))
+# parentDir = os.path.abspath(os.path.join(marker.__file__, os.pardir))
+# print('presets folder: {}'.format(parentDir))
 
 from maya import OpenMayaUI as omui
 from Qt import QtWidgets, QtCore, QtGui
@@ -54,7 +59,6 @@ elif Qt.__binding__.startswith('PyQt'):
     from sip import wrapinstance as wrapInstance
 else:
     from shiboken2 import wrapInstance
-
 
 def get_maya_main_window():
     #    Get the memory address of the main window
@@ -115,8 +119,21 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         file_save.setStatusTip('Save Checklist')
         file_save.triggered.connect(self._save_checklist) 
 
-        file_presets = QtGui.QAction('Presets', self) 
-        file_presets.triggered.connect(self.test) 
+        file_save_as = QtGui.QAction('Save As', self)  
+        file_save_as.setStatusTip('Save Checklist As')
+        file_save_as.triggered.connect(self._save_as_checklist) 
+
+        file_presets = QtGui.QMenu('Presets', self) 
+
+        file_preset_basic = QtGui.QAction('Basic', self) 
+        file_preset_basic.triggered.connect(lambda preset = 'basic': self._load_preset(preset)) 
+        file_preset_polish = QtGui.QAction('Polish', self) 
+        file_preset_polish.triggered.connect(lambda preset = 'polish': self._load_preset(preset)) 
+        file_preset_face = QtGui.QAction('Face', self) 
+        file_preset_face.triggered.connect(lambda preset = 'face': self._load_preset(preset)) 
+
+        file_rename = QtGui.QAction('Rename', self)  
+        file_rename.triggered.connect(self._rename_checklist) 
 
         file_exit = QtGui.QAction('Quit', self) 
         file_exit.triggered.connect(self.test2) 
@@ -124,7 +141,14 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         file_menu.addAction(file_new)
         file_menu.addAction(file_open)
         file_menu.addAction(file_save)
-        file_menu.addAction(file_presets)
+        file_menu.addAction(file_save_as)
+        file_menu.addSeparator()
+        file_menu.addAction(file_rename)
+        file_menu.addMenu(file_presets)
+        file_presets.addAction(file_preset_basic)
+        file_presets.addAction(file_preset_polish)
+        file_presets.addAction(file_preset_face)
+        file_menu.addSeparator()
         file_menu.addAction(file_exit)
 
         self.base_layout.addWidget(menu_bar)
@@ -163,8 +187,6 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
 
             print(each_dict)
 
-
-        
         pass
 
     def _add_tab(self, tab_name = 'Untitled'):
@@ -206,7 +228,27 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
 
     def _save_checklist(self):
         '''
-        Saves current checklist
+        Saves current checklist at stored directory
+        '''
+
+        print('Current index: {}'.format(self.tab_widget.currentIndex()))
+        print('Dictionary: {}'.format(self.TABS[self.tab_widget.currentIndex()]))
+
+        #   Get saved checklist directory
+        export_file = self.TABS[self.tab_widget.currentIndex()].save_directory
+
+        #   If save directory is blank or if it is a preset checklist, run save as function
+        print('prest: {}'.format(self.TABS[self.tab_widget.currentIndex()].preset))
+        if (not export_file) or (self.TABS[self.tab_widget.currentIndex()].preset):
+            self._save_as_checklist()
+            return
+
+        #   Write to file
+        self._write_to_file(export_file)
+
+    def _save_as_checklist(self):
+        '''
+        Save current checklist as new file
         '''
 
         print('Current index: {}'.format(self.tab_widget.currentIndex()))
@@ -223,12 +265,38 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
             "JSON Files (*.json)"
             )
         
-        #    Set export.csv directory text field
         export_file = selectedFile[0]
 
+        #   Set save directory in checklist class
+        self.TABS[self.tab_widget.currentIndex()].save_directory = export_file
+
+        #   Write to file
+        self._write_to_file(export_file)
+
+    def _save_as_preset(self):
+        '''
+        Save current checklist as a preset
+        '''
+        pass
+
+    def _write_to_file(self, export_file):
+        '''
+        Writes checklist data to export file
+        '''
         with open(export_file, 'w') as outfile:
 
             data = []
+
+            #   Create info dictionary
+            logger.debug('Checklist name: {}'.format(self.TABS[self.tab_widget.currentIndex()].tab_name))
+            logger.debug('Save Directory: {}'.format(self.TABS[self.tab_widget.currentIndex()].save_directory))
+            logger.debug('Preset: {}'.format(self.TABS[self.tab_widget.currentIndex()].preset))
+
+            info = {'checklist_name' : self.TABS[self.tab_widget.currentIndex()].tab_name,
+                'save_directory' : self.TABS[self.tab_widget.currentIndex()].save_directory,
+                'preset' : self.TABS[self.tab_widget.currentIndex()].preset}
+                
+            data.append(info)
 
             for each in self.TABS[self.tab_widget.currentIndex()].ITEMS:
                 each_dict = {}
@@ -236,40 +304,94 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
                 each_dict['text'] = each.text
                 each_dict['check'] = each.check
 
-                print(each_dict)
+                logger.debug(each_dict)
+
                 data.append(each_dict)
-                # json.dump(each_dict, outfile)
 
             json.dump(data, outfile)
 
-    def _load_checklist(self):
+    def _load_preset(self, preset):
+        '''
+        Load preset
+        '''
+        logger.info('Loading preset checklist: {}'.format(preset))
+
+        #   Query all the lists in the presets folder
+        presets_folder_directory = os.path.abspath(os.path.join(marker.__file__, os.pardir))
+        all_preset_checklists = [each_file for each_file in os.listdir(presets_folder_directory) if (each_file.lower()).endswith('json')]
+        logger.debug('All files in presets folder: {}'.format(all_preset_checklists))
+
+        #   Check for specified preset in the presets folder
+        preset_name = '{}.json'.format(preset)
+        if not (preset_name in all_preset_checklists):
+            mc.warning('Specified preset does not exist!')
+            return False
+
+        #   Generate load path
+        load_checklist = os.path.join(presets_folder_directory, preset_name)
+
+        #   Load preset
+        self._load_checklist(checklist = load_checklist)
+
+    def _load_checklist(self, checklist = None):
         '''
         Loads checklist
         '''
         #   Open new tab
         tab = self._add_tab()
 
-        #    Get current scene directory
-        currentSceneName = mc.workspace(query = True, dir = True)
-        
-        #    Open dialog box
-        selectedFile = QtWidgets.QFileDialog.getOpenFileName(
-            self, 
-            'Open file',
-            currentSceneName,
-            "JSON Files (*.json)"
-            )
-        
-        #    Set export.csv directory text field
-        import_file = selectedFile[0]
+        import_file = checklist
+        #   If the chekclist isn't specified, load prompt dialog box
+        if (not checklist):
+            #    Get current scene directory
+            currentSceneName = mc.workspace(query = True, dir = True)
+            
+            #    Open dialog box
+            selectedFile = QtWidgets.QFileDialog.getOpenFileName(
+                self, 
+                'Open file',
+                currentSceneName,
+                "JSON Files (*.json)"
+                )
+            
+            import_file = selectedFile[0]
+            
+
+        #   Set save directory
+        self.TABS[self.tab_widget.currentIndex()].save_directory = import_file
 
         with open(import_file) as infile:
             data = infile.read()
             imported_checklist = json.loads(data)
 
             #   Add checklist items to new tab
-            for checklist_item in imported_checklist:
-                tab._add_item(frame = checklist_item['frame'], text = checklist_item['text'], check = checklist_item['check'])
+            for i, checklist_item in enumerate(imported_checklist):
+                
+                #   Get checklist info from first dictionary item
+                if (i == 0):
+                    self._rename_checklist(name = checklist_item['checklist_name'])
+                    tab.save_directory = checklist_item['save_directory']
+                    tab.preset = checklist_item['preset']
+                else:
+                    tab._add_item(frame = checklist_item['frame'], text = checklist_item['text'], check = checklist_item['check'])
+
+    def _rename_checklist(self, name = None):
+        '''
+        Rename current checklist
+        '''
+
+        if (not name):
+            #   Prompt user for new name
+            input_tab_name_dialog = QtGui.QInputDialog()
+            input_tab_name_dialog.setLabelText("Rename checklist")
+            input_tab_name_dialog.setWindowTitle("Rename Checklist")
+            input_tab_name_dialog.exec_()
+            name = input_tab_name_dialog.textValue()
+
+            print('input: {}'.format(name))
+
+        self.TABS[self.tab_widget.currentIndex()].tab_name = name
+        self.tab_widget.setTabText(self.tab_widget.currentIndex(), name)
 
 
 
@@ -278,7 +400,7 @@ class ChecklistTab(QtWidgets.QWidget):
 
     ITEMS = []
 
-    def __init__(self, layout, tab_name):
+    def __init__(self, layout, tab_name, preset = False):
         logger.debug('Checklist tab!')
 
         super(ChecklistTab, self).__init__()
@@ -286,6 +408,9 @@ class ChecklistTab(QtWidgets.QWidget):
         self.base_layout = layout
         self.tab_name = tab_name
         self.ITEMS = []
+
+        self.save_directory = ''
+        self.preset = preset
         
         self._build_ui()
 
@@ -357,6 +482,7 @@ class ChecklistTab(QtWidgets.QWidget):
         Delete item from checklist
         '''
         pass
+
 
 class ChecklistItem(QtWidgets.QWidget):
     

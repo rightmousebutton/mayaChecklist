@@ -1,0 +1,18 @@
+[
+    {"save_directory": "", 
+    "preset": false, 
+    "checklist_name": "POLISH"}, 
+    {"text": "Pushing Poses Pass", "frame": null, "check": false}, 
+    {"text": "COG Arc Pass", "frame": null, "check": false}, 
+    {"text": "Nose Art Pass", "frame": null, "check": false}, 
+    {"text": "Elbows Pass", "frame": null, "check": false}, 
+    {"text": "Kne Pop Pass", "frame": null, "check": false}, 
+    {"text": "Jiggle & Residual Movement Pass", "frame": null, "check": false}, 
+    {"text": "Deformers Pass", "frame": null, "check": false}, 
+    {"text": "Fingers Appeal Pass", "frame": null, "check": false}, 
+    {"text": "Mouth Appeal Pass", "frame": null, "check": false}, 
+    {"text": "Blink Pass", "frame": null, "check": false}, 
+    {"text": "Eyebrows Pass", "frame": null, "check": false}, 
+    {"text": "Ears Pass", "frame": null, "check": false}, 
+    {"text": "Breathing Pass", "frame": null, "check": false}
+]

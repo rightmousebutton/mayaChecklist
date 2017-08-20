@@ -1,0 +1,15 @@
+[
+    {"save_directory": "",
+    "preset": true,
+    "checklist_name": "FACE"},
+    {"text": "Face Asymmetry Pass", "frame": null, "check": false}, 
+    {"text": "Mouth Appeal Pass", "frame": null, "check": false}, 
+    {"text": "Eyebrows Pass", "frame": null, "check": false}, 
+    {"text": "Blink Pass", "frame": null, "check": false}, 
+    {"text": "Nostril Pass", "frame": null, "check": false}, 
+    {"text": "Cheeks Pass", "frame": null, "check": false}, 
+    {"text": "Teeth Pass", "frame": null, "check": false}, 
+    {"text": "Ears Pass", "frame": null, "check": false}, 
+    {"text": "Eyedart Pass", "frame": null, "check": false}, 
+    {"text": "Pupil Dilation Pass", "frame": null, "check": false}
+]
