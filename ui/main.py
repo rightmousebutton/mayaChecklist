@@ -641,8 +641,11 @@ class ChecklistItem(QtWidgets.QWidget):
             logger.debug('Applying edits!')
 
             #   Gather new info
-            self.frame = edit_frame_block.text()
             self.text = edit_text_block.text()
+            frame = edit_frame_block.text()
+            if (not frame.isdigit()):
+                frame = None
+            self.frame = frame
 
             #   Apply new info
             self.frame_block.setText(self.frame)
