@@ -618,6 +618,12 @@ class ChecklistItem(QtWidgets.QWidget):
             self.palette.setColor(QtGui.QPalette.Foreground, self.PALETTE[self.color])
             self.text_block.setPalette(self.palette)
 
+    def _edit_checklist_item(self):
+        '''
+        Edits the current checklist item
+        '''
+        debug.log('Edit checklist item!')
+
 
 def main():
     dialog = MayaChecklistUI(parent = get_maya_main_window())
