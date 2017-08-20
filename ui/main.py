@@ -82,7 +82,7 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         try:
             pm.deleteUI(self.OBJECTNAME)
         except:
-            print('No previous window')
+            logger.debug('No previous window')
 
         super(MayaChecklistUI, self).__init__(parent = parent)
         
@@ -238,7 +238,6 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         export_file = self.TABS[self.tab_widget.currentIndex()].save_directory
 
         #   If save directory is blank or if it is a preset checklist, run save as function
-        print('prest: {}'.format(self.TABS[self.tab_widget.currentIndex()].preset))
         if (not export_file) or (self.TABS[self.tab_widget.currentIndex()].preset):
             self._save_as_checklist()
             return
@@ -302,6 +301,7 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
                 each_dict = {}
                 each_dict['frame'] = each.frame
                 each_dict['text'] = each.text
+                each_dict['color'] = each.color
                 each_dict['check'] = each.check
 
                 logger.debug(each_dict)
@@ -430,6 +430,14 @@ class ChecklistTab(QtWidgets.QWidget):
         add_checklist_widget = QtWidgets.QWidget(self)
         add_checklist_layout = QtWidgets.QHBoxLayout(add_checklist_widget)
 
+        #   Color picker
+        self.color = None
+        self.color_picker_button = QtWidgets.QPushButton(self)
+        self.color_picker_button.setMaximumWidth(30)
+        self.color_picker_button.clicked.connect(lambda target = self.color_picker_button: self._pick_color(target))
+        self.color_picker_button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.color_picker_button.customContextMenuRequested.connect(self._color_right_click_menu)
+
         self.checklist_text = QtWidgets.QLineEdit(self)
         self.checklist_frame = QtWidgets.QLineEdit(self)
         # self.checklist_frame.setMinimumWidth(20)
@@ -438,6 +446,7 @@ class ChecklistTab(QtWidgets.QWidget):
         add_button.setText('+')
         add_button.clicked.connect(self._add_item)
 
+        add_checklist_layout.addWidget(self.color_picker_button)
         add_checklist_layout.addWidget(self.checklist_frame)
         add_checklist_layout.addWidget(self.checklist_text)
         add_checklist_layout.addWidget(add_button)
@@ -458,6 +467,41 @@ class ChecklistTab(QtWidgets.QWidget):
         scroll_area.setWidget(scroll_widget)
         tab_layout.addWidget(scroll_area)
 
+    def _pick_color(self, target = None):
+        '''
+        Color picker dialog box
+        '''
+        color = QtGui.QColorDialog.getColor()
+        self.color = color.name()
+        target.setStyleSheet('QWidget { background-color: %s}' % self.color)
+
+
+    def _color_right_click_menu(self, point):
+        '''
+        Show right click menu of color picker
+        '''
+        menu = QtGui.QMenu()
+
+        menu_default = menu.addAction('Default')
+        menu.addSeparator()
+        menu_red = menu.addAction('Red')
+        menu_blue = menu.addAction('Blue')
+        menu_green = menu.addAction('Green')
+        menu_yellow = menu.addAction('Yellow')
+
+        palette_dict = {
+            menu_default : None,
+            menu_red : '#733230',
+            menu_blue : '#002D40',
+            menu_green : '#2C594F',
+            menu_yellow : '#998A2F'
+        }
+
+        action = menu.exec_(self.mapToGlobal(point))
+        self.color = palette_dict.get(action, None)
+
+        self.color_picker_button.setStyleSheet('QWidget { background-color: %s}' % self.color)
+
     def _add_item(self, frame = None, text = None, check = False):
         '''
         Adds a checklist item
@@ -468,7 +512,12 @@ class ChecklistTab(QtWidgets.QWidget):
         if (not text):
             text = self.checklist_text.text()
 
-        item = ChecklistItem(checklist = self, layout = self.scroll_layout, frame = frame, text = text, check = check)
+        item = ChecklistItem(checklist = self, 
+            layout = self.scroll_layout,
+            frame = frame,
+            text = text,
+            check = check,
+            color = self.color)
 
         #   Reset text
         self.checklist_frame.setText('')
@@ -493,7 +542,7 @@ class ChecklistItem(QtWidgets.QWidget):
         'green' : QtCore.Qt.green
         }
 
-    def __init__(self, checklist, layout, frame = None, text = None, check = False, color = 'default'):
+    def __init__(self, checklist, layout, frame = None, text = None, check = False, color = None):
         logger.debug('Checklist item!')
 
         super(ChecklistItem, self).__init__()
@@ -546,15 +595,39 @@ class ChecklistItem(QtWidgets.QWidget):
 
         #    Palette
         self.palette = QtGui.QPalette()
-        self.palette.setColor(QtGui.QPalette.Foreground, self.PALETTE[self.color])
-        self.frame_block.setPalette(self.palette)
-        self.text_block.setPalette(self.palette)
-
+        self._refresh_properties()
         
         self.check_box.stateChanged.connect(self._toggle_widget)
         self.check_box.setChecked(self.check)
 
- 
+    def _set_color(self):
+        '''
+        Set background color of item
+        '''
+        print(self.color)
+        if (self.color):
+            self.palette.setColor(QtGui.QPalette.Background, self.color)
+            self.setAutoFillBackground(True)
+            self.setPalette(self.palette)
+
+    def _refresh_properties(self):
+        '''
+        Refresh color, frame block, text block
+        '''
+        #   Color
+        print(self.color)
+        if (self.color):
+            self.palette.setColor(QtGui.QPalette.Background, self.color)
+            self.setAutoFillBackground(True)
+            self.setPalette(self.palette)
+
+        #   Frame block
+        self.frame_block.setText(self.frame)
+
+        #   Text block
+        self.text_block.setText(self.text)
+
+
     def _destroy(self):
         '''
         Delete Checklist item instance
@@ -622,8 +695,17 @@ class ChecklistItem(QtWidgets.QWidget):
         logger.debug('Edit checklist item!')
 
         #   Hide previous widgets
+        self.check_box.hide()
         self.frame_block.hide()
         self.text_block.hide()
+
+        #   Color button
+        self.edit_color_picker_button = QtWidgets.QPushButton(self)
+        self.edit_color_picker_button.setMaximumWidth(30)
+        self.edit_color_picker_button.clicked.connect(lambda target = self.edit_color_picker_button: self._pick_color(target))
+        self.edit_color_picker_button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.edit_color_picker_button.customContextMenuRequested.connect(self._color_right_click_menu)
+        self.item_layout.addWidget(self.edit_color_picker_button)
 
         #    Frame block
         edit_frame_block = QtWidgets.QLineEdit(self.frame)
@@ -648,10 +730,13 @@ class ChecklistItem(QtWidgets.QWidget):
             self.frame = frame
 
             #   Apply new info
-            self.frame_block.setText(self.frame)
-            self.text_block.setText(self.text)
+            self._refresh_properties()
 
             #   Destroy edit widgets
+            self.edit_color_picker_button.setParent(None)
+            self.edit_color_picker_button.setVisible(False)
+            self.edit_color_picker_button.deleteLater()
+
             edit_frame_block.setParent(None)
             edit_frame_block.setVisible(False)
             edit_frame_block.deleteLater()
@@ -665,6 +750,7 @@ class ChecklistItem(QtWidgets.QWidget):
             apply_edit_button.deleteLater()
 
             #   Show previous widgets
+            self.check_box.show()
             self.frame_block.show()
             self.text_block.show()
 
@@ -673,6 +759,40 @@ class ChecklistItem(QtWidgets.QWidget):
         apply_edit_button.clicked.connect(_apply_edits)
         self.item_layout.addWidget(apply_edit_button)
 
+    def _pick_color(self, target = None):
+        '''
+        Color picker dialog box
+        '''
+        color = QtGui.QColorDialog.getColor()
+        self.color = color.name()
+        target.setStyleSheet('QWidget { background-color: %s}' % self.color)
+
+
+    def _color_right_click_menu(self, point):
+        '''
+        Show right click menu of color picker
+        '''
+        menu = QtGui.QMenu()
+
+        menu_default = menu.addAction('Default')
+        menu.addSeparator()
+        menu_red = menu.addAction('Red')
+        menu_blue = menu.addAction('Blue')
+        menu_green = menu.addAction('Green')
+        menu_yellow = menu.addAction('Yellow')
+
+        palette_dict = {
+            menu_default : None,
+            menu_red : '#733230',
+            menu_blue : '#002D40',
+            menu_green : '#2C594F',
+            menu_yellow : '#998A2F'
+        }
+
+        action = menu.exec_(self.mapToGlobal(point))
+        self.color = palette_dict.get(action, None)
+
+        self.edit_color_picker_button.setStyleSheet('QWidget { background-color: %s}' % self.color)
 
 
 
