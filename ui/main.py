@@ -397,6 +397,9 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
 
 
 class ChecklistTab(QtWidgets.QWidget):
+    '''
+    Checklist Class
+    '''
 
     ITEMS = []
 
@@ -467,12 +470,6 @@ class ChecklistTab(QtWidgets.QWidget):
 
         item = ChecklistItem(checklist = self, layout = self.scroll_layout, frame = frame, text = text, check = check)
 
-        #   Add to main dictionary
-        # print('Adding {} to {}!'.format(item, self))
-        # self.ITEMS.append(item)
-        # print('Dict: {}'.format(self.ITEMS))
-
-
         #   Reset text
         self.checklist_frame.setText('')
         self.checklist_text.setText('')
@@ -519,7 +516,7 @@ class ChecklistItem(QtWidgets.QWidget):
     def _build_ui(self):
         
         #    Base horizontal layout
-        item_layout = QtWidgets.QHBoxLayout(self)
+        self.item_layout = QtWidgets.QHBoxLayout(self)
         self.base_layout.addWidget(self)
 
         # ---------------------------------------------------------------------#
@@ -529,14 +526,14 @@ class ChecklistItem(QtWidgets.QWidget):
         self.check_box = QtWidgets.QCheckBox()
         self.check_box.setMinimumWidth(15)
         self.check_box.setMaximumWidth(15)
-        item_layout.addWidget(self.check_box)
+        self.item_layout.addWidget(self.check_box)
 
         #    Frame block
         self.frame_block = QtWidgets.QPushButton(self.frame)
         self.frame_block.setMinimumWidth(30)
         self.frame_block.setMaximumWidth(30)
         self.frame_block.clicked.connect(self._jump_to_frame)
-        item_layout.addWidget(self.frame_block)
+        self.item_layout.addWidget(self.frame_block)
 
         #    Text block
         self.text_block = QtWidgets.QLabel(self.text)
@@ -545,7 +542,7 @@ class ChecklistItem(QtWidgets.QWidget):
         self.text_block.setWordWrap(True)
         self.text_block.setMinimumWidth(120)
         self.text_block.setMaximumWidth(180)
-        item_layout.addWidget(self.text_block)
+        self.item_layout.addWidget(self.text_block)
 
         #    Palette
         self.palette = QtGui.QPalette()
@@ -596,7 +593,7 @@ class ChecklistItem(QtWidgets.QWidget):
         action = menu.exec_(self.mapToGlobal(point))
         
         if action == edit_menu:
-            print('edit!')
+            self._edit_checklist_item()
             
         elif action == delete_menu:
             print('delete!')
@@ -622,7 +619,59 @@ class ChecklistItem(QtWidgets.QWidget):
         '''
         Edits the current checklist item
         '''
-        debug.log('Edit checklist item!')
+        logger.debug('Edit checklist item!')
+
+        #   Hide previous widgets
+        self.frame_block.hide()
+        self.text_block.hide()
+
+        #    Frame block
+        edit_frame_block = QtWidgets.QLineEdit(self.frame)
+        edit_frame_block.setMinimumWidth(30)
+        edit_frame_block.setMaximumWidth(30)
+        self.item_layout.addWidget(edit_frame_block)
+
+        #    Text block
+        edit_text_block = QtWidgets.QLineEdit(self.text)
+        edit_text_block.setMinimumWidth(120)
+        edit_text_block.setMaximumWidth(180)
+        self.item_layout.addWidget(edit_text_block)
+        
+        def _apply_edits():
+            logger.debug('Applying edits!')
+
+            #   Gather new info
+            self.frame = edit_frame_block.text()
+            self.text = edit_text_block.text()
+
+            #   Apply new info
+            self.frame_block.setText(self.frame)
+            self.text_block.setText(self.text)
+
+            #   Destroy edit widgets
+            edit_frame_block.setParent(None)
+            edit_frame_block.setVisible(False)
+            edit_frame_block.deleteLater()
+
+            edit_text_block.setParent(None)
+            edit_text_block.setVisible(False)
+            edit_text_block.deleteLater()
+
+            apply_edit_button.setParent(None)
+            apply_edit_button.setVisible(False)
+            apply_edit_button.deleteLater()
+
+            #   Show previous widgets
+            self.frame_block.show()
+            self.text_block.show()
+
+        apply_edit_button = QtWidgets.QPushButton(self)
+        apply_edit_button.setText('OK')
+        apply_edit_button.clicked.connect(_apply_edits)
+        self.item_layout.addWidget(apply_edit_button)
+
+
+
 
 
 def main():
