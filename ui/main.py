@@ -20,7 +20,6 @@ mayaChecklist.ui.main.main()
 *   Save as preset
 *   Sort by check/archive checks
 *   Sort by frame
-*   Add color functionality
 *   Reorder checklist item functionality
 
 =========================================================
@@ -48,7 +47,7 @@ import logging
 #    just goes to output
 logging.basicConfig()
 logger = logging.getLogger('MayaChecklist')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 if Qt.__binding__ == 'PySide':
@@ -373,7 +372,12 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
                     tab.save_directory = checklist_item['save_directory']
                     tab.preset = checklist_item['preset']
                 else:
-                    tab._add_item(frame = checklist_item['frame'], text = checklist_item['text'], check = checklist_item['check'])
+                    print(checklist_item['text'])
+                    print(checklist_item['color'])
+                    tab._add_item(frame = checklist_item['frame'], 
+                        text = checklist_item['text'], 
+                        color = checklist_item['color'], 
+                        check = checklist_item['check'])
 
     def _rename_checklist(self, name = None):
         '''
@@ -502,7 +506,7 @@ class ChecklistTab(QtWidgets.QWidget):
 
         self.color_picker_button.setStyleSheet('QWidget { background-color: %s}' % self.color)
 
-    def _add_item(self, frame = None, text = None, check = False):
+    def _add_item(self, frame = None, text = None, color = None, check = False):
         '''
         Adds a checklist item
         '''
@@ -516,8 +520,8 @@ class ChecklistTab(QtWidgets.QWidget):
             layout = self.scroll_layout,
             frame = frame,
             text = text,
-            check = check,
-            color = self.color)
+            color = color,
+            check = check)
 
         #   Reset text
         self.checklist_frame.setText('')
@@ -635,7 +639,8 @@ class ChecklistItem(QtWidgets.QWidget):
         logger.debug('Deleting item!')
 
         #   Remove from dictionary
-
+        self.checklist.ITEMS.remove(self)
+        print(self.checklist.ITEMS)
 
         #    Remove widget from UI
         self.setParent(None)
