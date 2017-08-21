@@ -2,5 +2,12 @@
     {"save_directory": "",
     "preset": true,
     "checklist_name": "BASIC"},
-    {"text": "Face Asymmetry Pass", "frame": null, "check": false}
+    {"color": null, "text": "COG Movement", "frame": null, "check": false},
+    {"color": null, "text": "Line of Action", "frame": null, "check": false},
+    {"color": null, "text": "Offsets", "frame": null, "check": false},
+    {"color": null, "text": "Overlap + Follow Through", "frame": null, "check": false},
+    {"color": null, "text": "Silhouette", "frame": null, "check": false},
+    {"color": null, "text": "Twinning", "frame": null, "check": false},
+    {"color": null, "text": "Leading", "frame": null, "check": false},
+    {"color": null, "text": "Offset rotation from translation", "frame": null, "check": false}
 ]

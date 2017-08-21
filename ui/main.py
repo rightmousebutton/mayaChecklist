@@ -32,9 +32,6 @@ import os
 import json
 
 import mayaChecklist.presets.marker as marker
-# print('File: {}'.format(marker.__file__))
-# parentDir = os.path.abspath(os.path.join(marker.__file__, os.pardir))
-# print('presets folder: {}'.format(parentDir))
 
 from maya import OpenMayaUI as omui
 from Qt import QtWidgets, QtCore, QtGui
@@ -104,8 +101,11 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         #    Menu Bar
         menu_bar = QtGui.QMenuBar()
         file_menu = menu_bar.addMenu('File') 
+        view_menu = menu_bar.addMenu('View') 
         help_menu = menu_bar.addMenu('Help') 
+        self.base_layout.addWidget(menu_bar)
 
+        #   File Menu
         file_new = QtGui.QAction('New', self)
         file_new.setStatusTip('Create a new checklist')
         file_new.triggered.connect(self._add_tab)
@@ -124,6 +124,8 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
 
         file_presets = QtGui.QMenu('Presets', self) 
 
+        file_preset_arcs = QtGui.QAction('Arcs', self) 
+        file_preset_arcs.triggered.connect(lambda preset = 'arcs': self._load_preset(preset)) 
         file_preset_basic = QtGui.QAction('Basic', self) 
         file_preset_basic.triggered.connect(lambda preset = 'basic': self._load_preset(preset)) 
         file_preset_polish = QtGui.QAction('Polish', self) 
@@ -135,7 +137,7 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         file_rename.triggered.connect(self._rename_checklist) 
 
         file_exit = QtGui.QAction('Quit', self) 
-        file_exit.triggered.connect(self.test2) 
+        file_exit.triggered.connect(self.test) 
 
         file_menu.addAction(file_new)
         file_menu.addAction(file_open)
@@ -144,13 +146,41 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(file_rename)
         file_menu.addMenu(file_presets)
+        file_presets.addAction(file_preset_arcs)
         file_presets.addAction(file_preset_basic)
         file_presets.addAction(file_preset_polish)
         file_presets.addAction(file_preset_face)
         file_menu.addSeparator()
         file_menu.addAction(file_exit)
 
-        self.base_layout.addWidget(menu_bar)
+        
+        debug = QtGui.QAction('Debug', self)  
+        debug.triggered.connect(self.debug) 
+        file_menu.addAction(debug)
+
+        #   View Menu
+        view_all = QtGui.QAction('All', self)
+        view_all.setStatusTip('Show all items')
+        view_all.triggered.connect(lambda filter = 'all' : self._view_filter(filter))
+        
+        view_unchecked = QtGui.QAction('Unchecked', self)
+        view_unchecked.setStatusTip('Show only unchecked items')
+        view_unchecked.triggered.connect(lambda filter = 'unchecked' : self._view_filter(filter))
+        
+        sort_by_frame = QtGui.QAction('Frame', self)
+        sort_by_frame.setStatusTip('Sort by frame')
+        sort_by_frame.triggered.connect(lambda sort = 'frame' : self._sort_list(sort))
+        
+
+        filter_separator = QtGui.QMenu.addSeparator(view_menu)
+        filter_separator.setText('Filter')
+        view_menu.addAction(view_all)
+        view_menu.addAction(view_unchecked)
+
+        sort_separator = QtGui.QMenu.addSeparator(view_menu)
+        sort_separator.setText('Sort')
+        view_menu.addAction(sort_by_frame)
+
 
         #    Tabbed Layout
         self.tab_widget = QtWidgets.QTabWidget()
@@ -171,7 +201,7 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
 
         pass
 
-    def test2(self):
+    def debug(self):
         
         print('Current checklist index: {}'.format(self.TABS[self.tab_widget.currentIndex()]))
         print('Current checklist index items: {}'.format(self.TABS[self.tab_widget.currentIndex()].ITEMS))
@@ -179,14 +209,101 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
 
 
         for each in self.TABS[self.tab_widget.currentIndex()].ITEMS:
-            each_dict = {}
-            each_dict['frame'] = each.frame
-            each_dict['text'] = each.text
-            each_dict['check'] = each.check
-
-            print(each_dict)
+            print('--------------------')
+            print('Frame: {}'.format(each.frame))
+            print('Color: {}'.format(each.color))
+            print('Text: {}'.format(each.text))
+            print('Check: {}'.format(each.check))
 
         pass
+
+    def _view_filter(self, show):
+        '''
+        Filter checklist items
+        '''
+        logger.info('Filtering checklist: {}'.format(show))
+
+        func_dic = {
+            'all' : self._view_filter_all,
+            'unchecked' : self._view_filter_unchecked
+        }
+
+        func_dic.get(show, None)()
+
+    def _view_filter_all(self):
+        '''
+        Filter checklist: show all
+        '''
+        logger.info('Filtering checklist: show all')
+
+        for each in self.TABS[self.tab_widget.currentIndex()].ITEMS:
+            #   Hide the widget if it is checked
+            each.show()
+
+    def _view_filter_unchecked(self):
+        '''
+        Filter checklist: show only unchecked
+        '''
+        logger.info('Filtering checklist: show unchecked only')
+
+        for each in self.TABS[self.tab_widget.currentIndex()].ITEMS:
+            #   Hide the widget if it is checked
+            if (each.check):
+                each.hide()                
+
+
+    def _sort_list(self, sort):
+        '''
+        Sort checklist by
+        '''
+        logger.info('Sorting by {}'.format(sort))
+
+        func_dic = {
+            'frame' : self._sort_list_frame,
+            'color' : self._sort_list_color
+        }
+
+        func_dic.get(sort, None)()
+
+    def _sort_list_frame(self):
+        '''
+        Sort checklist by frame number
+        '''
+        logger.info('Sorting checklist: sort by frame')
+
+        checklist_items = self.TABS[self.tab_widget.currentIndex()].ITEMS
+
+        #   Sort by frame
+        checklist_items = sorted(checklist_items, key = lambda item : item.frame)
+
+        self._refresh_checklist(checklist_items)
+
+
+    def _sort_list_color(self):
+        '''
+        Sort checklist by frame number
+        '''
+        logger.info('Sorting checklist: sort by color')
+
+    def _refresh_checklist(self, items):
+        '''
+        Refreshes checklist
+        '''
+        #   Current checklist
+        current_tab = self.TABS[self.tab_widget.currentIndex()]
+
+        #   Clear checklist
+        current_tab._clear_list()
+        print('current items')
+        print(current_tab.ITEMS)
+
+        #   Populate
+        for item in items:
+            print('Adding {}'.format(item))
+            current_tab._add_item(frame = item.frame, 
+                text = item.text, 
+                color = item.color, 
+                check = item.check)
 
     def _add_tab(self, tab_name = 'Untitled'):
         '''
@@ -515,6 +632,8 @@ class ChecklistTab(QtWidgets.QWidget):
             frame = self.checklist_frame.text()
         if (not text):
             text = self.checklist_text.text()
+        if (not color):
+            color = self.color
 
         item = ChecklistItem(checklist = self, 
             layout = self.scroll_layout,
@@ -527,11 +646,21 @@ class ChecklistTab(QtWidgets.QWidget):
         self.checklist_frame.setText('')
         self.checklist_text.setText('')
 
-    def _delete_item(self):
+    def _clear_list(self):
         '''
-        Delete item from checklist
+        Clear checklist
         '''
-        pass
+        for i, each in enumerate(self.ITEMS):
+
+            #    Remove widget from UI
+            each.setParent(None)
+            each.setVisible(False)
+
+            #    Theoretically, this line should be enough, but since there is 
+            #    often a time lag, the above 2 methods are also recommended
+            each.deleteLater()
+
+        self.ITEMS = []
 
 
 class ChecklistItem(QtWidgets.QWidget):
@@ -554,7 +683,7 @@ class ChecklistItem(QtWidgets.QWidget):
         self.checklist = checklist
         self.base_layout = layout
 
-        if (not frame.isdigit()):
+        if (not frame.lstrip('-').isdigit()):
             frame = None
         self.text = text
         self.frame = frame
@@ -619,7 +748,6 @@ class ChecklistItem(QtWidgets.QWidget):
         Refresh color, frame block, text block
         '''
         #   Color
-        print(self.color)
         if (self.color):
             self.palette.setColor(QtGui.QPalette.Background, self.color)
             self.setAutoFillBackground(True)
@@ -637,6 +765,7 @@ class ChecklistItem(QtWidgets.QWidget):
         Delete Checklist item instance
         '''
         logger.debug('Deleting item!')
+        print('Deleting item {}!'.format(self))
 
         #   Remove from dictionary
         self.checklist.ITEMS.remove(self)
@@ -656,7 +785,8 @@ class ChecklistItem(QtWidgets.QWidget):
         '''
         Jump to frame in Maya Timeline
         '''
-        mc.currentTime(self.frame)
+        if (self.frame):
+            mc.currentTime(self.frame)
 
     def _right_click_menu(self, point):
         '''
@@ -730,7 +860,7 @@ class ChecklistItem(QtWidgets.QWidget):
             #   Gather new info
             self.text = edit_text_block.text()
             frame = edit_frame_block.text()
-            if (not frame.isdigit()):
+            if (not frame.lstrip('-').isdigit()):
                 frame = None
             self.frame = frame
 

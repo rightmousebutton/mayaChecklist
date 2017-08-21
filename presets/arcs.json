@@ -1,0 +1,16 @@
+[
+    {"save_directory": "",
+    "preset": true,
+    "checklist_name": "ARCS"},
+    {"color": null, "text": "COG", "frame": null, "check": false},
+    {"color": null, "text": "Wrists", "frame": null, "check": false},
+    {"color": null, "text": "Elbows", "frame": null, "check": false},
+    {"color": null, "text": "Fingers", "frame": null, "check": false},
+    {"color": null, "text": "Feet - Heel", "frame": null, "check": false},
+    {"color": null, "text": "Feet - Toe", "frame": null, "check": false},
+    {"color": null, "text": "Head/Torso", "frame": null, "check": false},
+    {"color": null, "text": "Knees", "frame": null, "check": false},
+    {"color": null, "text": "Props", "frame": null, "check": false},
+    {"color": null, "text": "Eyes", "frame": null, "check": false},
+    {"color": null, "text": "Nose", "frame": null, "check": false}
+]
