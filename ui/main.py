@@ -19,7 +19,6 @@ mayaChecklist.ui.main.main()
 *   Edit/Delete checklist item
 *   Save as preset
 *   Sort by check/archive checks
-*   Sort by frame
 *   Reorder checklist item functionality
 
 =========================================================
