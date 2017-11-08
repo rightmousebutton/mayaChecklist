@@ -19,6 +19,7 @@ mayaChecklist.ui.main.main()
 *   Edit/Delete checklist item
 *   Save as preset
 *   Sort by check/archive checks
+*   Sort by frame
 *   Reorder checklist item functionality
 
 =========================================================
@@ -165,15 +166,11 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         view_unchecked = QtGui.QAction('Unchecked', self)
         view_unchecked.setStatusTip('Show only unchecked items')
         view_unchecked.triggered.connect(lambda filter = 'unchecked' : self._view_filter(filter))
-
-        view_remove_checked = QtGui.QAction('Remove Checked', self)
-        view_remove_checked.setStatusTip('Remove checked items')
-        view_remove_checked.triggered.connect(self._remove_checked)
-        view_menu.addAction(view_remove_checked)
-
+        
         sort_by_frame = QtGui.QAction('Frame', self)
         sort_by_frame.setStatusTip('Sort by frame')
         sort_by_frame.triggered.connect(lambda sort = 'frame' : self._sort_list(sort))
+        
 
         filter_separator = QtGui.QMenu.addSeparator(view_menu)
         filter_separator.setText('Filter')
@@ -183,6 +180,7 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         sort_separator = QtGui.QMenu.addSeparator(view_menu)
         sort_separator.setText('Sort')
         view_menu.addAction(sort_by_frame)
+
 
         #    Tabbed Layout
         self.tab_widget = QtWidgets.QTabWidget()
@@ -321,27 +319,6 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
 
         #   Return newly created tab
         return tab
-
-    def _remove_checked(self):
-        '''
-        Removes checked items
-        '''
-        logger.info('Removing checked items!')
-
-        #   Go through each checklist item
-        archive_list = []
-        for i, item in enumerate(self.TABS[self.tab_widget.currentIndex()].ITEMS):
-            logger.debug('Item: {}'.format(item.text))
-
-            #   If it is checked, then remove it
-            if (item.check):
-                logger.debug('Removing {}'.format(item.text))
-                archive_list.append(item)
-        
-        #   Archive the ones that need archiving
-        for each in archive_list:
-            each._destroy()
-
 
     def _delete_tab(self, index):
         '''
@@ -802,7 +779,7 @@ class ChecklistItem(QtWidgets.QWidget):
         #    often a time lag, the above 2 methods are also recommended
         self.deleteLater()
 
-        return True
+        return
 
     def _jump_to_frame(self):
         '''
