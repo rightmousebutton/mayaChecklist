@@ -176,7 +176,14 @@ class MayaChecklistUI(QtWidgets.QDialog):
         sort_by_frame = QtGui.QAction('Frame', self)
         sort_by_frame.setStatusTip('Sort by frame')
         sort_by_frame.triggered.connect(lambda sort = 'frame' : self._sort_list(sort))
-        
+
+        sort_by_checkstate = QtGui.QAction('Checkstate', self)
+        sort_by_checkstate.setStatusTip('Sort by checkstate')
+        sort_by_checkstate.triggered.connect(lambda sort = 'checkstate' : self._sort_list(sort))
+
+        sort_by_color = QtGui.QAction('Color', self)
+        sort_by_color.setStatusTip('Sort by color')
+        sort_by_color.triggered.connect(lambda sort = 'color' : self._sort_list(sort))
 
         filter_separator = QtGui.QMenu.addSeparator(view_menu)
         filter_separator.setText('Filter')
@@ -186,7 +193,8 @@ class MayaChecklistUI(QtWidgets.QDialog):
         sort_separator = QtGui.QMenu.addSeparator(view_menu)
         sort_separator.setText('Sort')
         view_menu.addAction(sort_by_frame)
-
+        view_menu.addAction(sort_by_checkstate)
+        view_menu.addAction(sort_by_color)
 
         #    Tabbed Layout
         self.tab_widget = QtWidgets.QTabWidget()
@@ -266,6 +274,7 @@ class MayaChecklistUI(QtWidgets.QDialog):
 
         func_dic = {
             'frame' : self._sort_list_frame,
+            'checkstate' : self._sort_list_checkstate,
             'color' : self._sort_list_color
         }
 
@@ -284,12 +293,30 @@ class MayaChecklistUI(QtWidgets.QDialog):
 
         self._refresh_checklist(checklist_items)
 
+    def _sort_list_checkstate(self):
+        '''
+        Sort checklist by checkstate
+        '''
+        logger.info('Sorting checklist: sort by checkstate')
+
+        checklist_items = self.TABS[self.tab_widget.currentIndex()].ITEMS
+
+        #   Sort by checkstate
+        checklist_items = sorted(checklist_items, key = lambda item : item.check)
+
+        self._refresh_checklist(checklist_items)
 
     def _sort_list_color(self):
         '''
-        Sort checklist by frame number
+        Sort checklist by color
         '''
         logger.info('Sorting checklist: sort by color')
+
+        checklist_items = self.TABS[self.tab_widget.currentIndex()].ITEMS
+
+        #   Sort by checkstate
+        checklist_items = sorted(checklist_items, key = lambda item : item.color)
+        self._refresh_checklist(checklist_items)
 
     def _refresh_checklist(self, items):
         '''
@@ -300,8 +327,8 @@ class MayaChecklistUI(QtWidgets.QDialog):
 
         #   Clear checklist
         current_tab._clear_list()
-        print('current items')
-        print(current_tab.ITEMS)
+        # print('current items')
+        # print(current_tab.ITEMS)
 
         #   Populate
         for item in items:
@@ -618,7 +645,7 @@ class ChecklistTab(QtWidgets.QWidget):
         menu_yellow = menu.addAction('Yellow')
 
         palette_dict = {
-            menu_default : None,
+            menu_default : 'Default',
             menu_red : '#733230',
             menu_blue : '#002D40',
             menu_green : '#2C594F',
@@ -626,7 +653,7 @@ class ChecklistTab(QtWidgets.QWidget):
         }
 
         action = menu.exec_(self.mapToGlobal(point))
-        self.color = palette_dict.get(action, None)
+        self.color = palette_dict.get(action, 'Default')
 
         self.color_picker_button.setStyleSheet('QWidget { background-color: %s}' % self.color)
 
@@ -641,6 +668,9 @@ class ChecklistTab(QtWidgets.QWidget):
             text = self.checklist_text.text()
         if (not color):
             color = self.color
+
+        if (not color):
+            color = 'Default'
 
         item = ChecklistItem(checklist = self, 
             layout = self.scroll_layout,
@@ -682,7 +712,7 @@ class ChecklistItem(QtWidgets.QWidget):
         'green' : QtCore.Qt.green
         }
 
-    def __init__(self, checklist, layout, frame = None, text = None, check = False, color = None):
+    def __init__(self, checklist, layout, frame = None, text = None, check = False, color = 'Default'):
         logger.debug('Checklist item!')
 
         super(ChecklistItem, self).__init__()
@@ -702,7 +732,6 @@ class ChecklistItem(QtWidgets.QWidget):
         #   Add to checklist dictionary
         self.checklist.ITEMS.append(self)
 
-        self.setStyleSheet(css.CSS)
 
         self._build_ui()
 
@@ -745,25 +774,23 @@ class ChecklistItem(QtWidgets.QWidget):
         self.check_box.stateChanged.connect(self._toggle_widget)
         self.check_box.setChecked(self.check)
 
-    def _set_color(self):
-        '''
-        Set background color of item
-        '''
-        print(self.color)
-        if (self.color):
-            self.palette.setColor(QtGui.QPalette.Background, self.color)
-            self.setAutoFillBackground(True)
-            self.setPalette(self.palette)
-
     def _refresh_properties(self):
         '''
         Refresh color, frame block, text block
         '''
         #   Color
-        if (self.color):
+        print('refresh properties')
+        print(self.color)
+
+        if ((self.color) and (self.color != 'Default')):
             self.palette.setColor(QtGui.QPalette.Background, self.color)
             self.setAutoFillBackground(True)
             self.setPalette(self.palette)
+            print('a')
+        else:
+            self.setAutoFillBackground(False)
+            print('b')
+
 
         #   Frame block
         self.frame_block.setText(self.frame)
@@ -929,7 +956,7 @@ class ChecklistItem(QtWidgets.QWidget):
         menu_yellow = menu.addAction('Yellow')
 
         palette_dict = {
-            menu_default : None,
+            menu_default : 'Default',
             menu_red : '#733230',
             menu_blue : '#002D40',
             menu_green : '#2C594F',
