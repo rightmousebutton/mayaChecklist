@@ -31,6 +31,8 @@ import pymel.core as pm
 import os
 import json
 
+import css
+
 import mayaChecklist.presets.marker as marker
 
 from maya import OpenMayaUI as omui
@@ -65,14 +67,14 @@ def get_maya_main_window():
     return mainWindowPointer
 
 
-class MayaChecklistUI(QtWidgets.QMainWindow):
+class MayaChecklistUI(QtWidgets.QDialog):
 
     WINDOWTITLE = 'Maya Checklist'
     OBJECTNAME = 'mayaChecklistUI'
 
     TABS = dict()
 
-    def __init__(self, parent = None):
+    def __init__(self, parent = get_maya_main_window()):
 
         #   Delete previous windows
         try:
@@ -92,11 +94,15 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
         self.setMinimumWidth(320)
         self.setMinimumHeight(500)
 
-        #    Base vertical layout
+        self.layout = QtGui.QVBoxLayout(self)
 
+        #    Base vertical layout
         base_widget = QtWidgets.QWidget()
         self.base_layout = QtWidgets.QVBoxLayout(base_widget)
-        self.layout().addWidget(base_widget)
+        self.layout.addWidget(base_widget)
+        
+        size_policy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        base_widget.setSizePolicy(size_policy)
 
         #    Menu Bar
         menu_bar = QtGui.QMenuBar()
@@ -184,7 +190,7 @@ class MayaChecklistUI(QtWidgets.QMainWindow):
 
         #    Tabbed Layout
         self.tab_widget = QtWidgets.QTabWidget()
-        self.tab_widget.setMaximumWidth(300)
+        self.tab_widget.setSizePolicy(size_policy)
         self.tab_widget.setTabsClosable(True)
         self.tab_widget.tabCloseRequested.connect(self._delete_tab)
         self.tab_widget.setMovable(True)
@@ -533,6 +539,8 @@ class ChecklistTab(QtWidgets.QWidget):
         self.tab_name = tab_name
         self.ITEMS = []
 
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding,QtGui.QSizePolicy.Expanding)
+
         self.save_directory = ''
         self.preset = preset
         
@@ -544,7 +552,6 @@ class ChecklistTab(QtWidgets.QWidget):
         Create the main ui
         '''
         tab_layout = QtWidgets.QVBoxLayout(self)
-        size_policy = (QtGui.QSizePolicy.Expanding,QtGui.QSizePolicy.Expanding)
         self.base_layout.addTab(self, self.tab_name)
 
         #   Create add checklist item button
@@ -577,7 +584,7 @@ class ChecklistTab(QtWidgets.QWidget):
         #   Create scroll area
         scroll_widget = QtWidgets.QWidget()
         #    This makes sure the scroll doesn't act weird when there are only a few items
-        scroll_widget.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)        
+        scroll_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum)        
         self.scroll_layout = QtWidgets.QVBoxLayout(scroll_widget)
 
         #   Scroll Area
@@ -682,6 +689,8 @@ class ChecklistItem(QtWidgets.QWidget):
 
         self.checklist = checklist
         self.base_layout = layout
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        self.setMinimumSize(self.sizeHint())
 
         if (not frame.lstrip('-').isdigit()):
             frame = None
@@ -692,6 +701,8 @@ class ChecklistItem(QtWidgets.QWidget):
 
         #   Add to checklist dictionary
         self.checklist.ITEMS.append(self)
+
+        self.setStyleSheet(css.CSS)
 
         self._build_ui()
 
@@ -721,9 +732,10 @@ class ChecklistItem(QtWidgets.QWidget):
         self.text_block = QtWidgets.QLabel(self.text)
         self.text_block.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.text_block.customContextMenuRequested.connect(self._right_click_menu)
+        self.text_block.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         self.text_block.setWordWrap(True)
-        self.text_block.setMinimumWidth(120)
-        self.text_block.setMaximumWidth(180)
+        # self.text_block.setMinimumWidth(120)
+        # self.text_block.setMaximumWidth(180)
         self.item_layout.addWidget(self.text_block)
 
         #    Palette
@@ -933,5 +945,5 @@ class ChecklistItem(QtWidgets.QWidget):
 
 
 def main():
-    dialog = MayaChecklistUI(parent = get_maya_main_window())
+    dialog = MayaChecklistUI()
     dialog.show()
